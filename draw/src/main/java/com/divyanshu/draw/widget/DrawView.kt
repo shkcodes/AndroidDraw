@@ -9,7 +9,7 @@ import android.view.MotionEvent
 import android.view.View
 import java.util.LinkedHashMap
 
-class DrawView @JvmOverloads constructor(
+open class DrawView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
     private var mPaths = LinkedHashMap<MyPath, PaintOptions>()
@@ -28,8 +28,13 @@ class DrawView @JvmOverloads constructor(
     private var mIsSaving = false
     private var mIsStrokeWidthBarEnabled = false
 
+    var listener: DrawListener? = null
+
     var isEraserOn = false
         private set
+
+    val isCleared: Boolean
+        get() = mPaths.isEmpty()
 
     init {
         mPaint.apply {
@@ -58,6 +63,7 @@ class DrawView @JvmOverloads constructor(
         mPaths.remove(lastKey)
         if (lastPath != null && lastKey != null) {
             mUndonePaths[lastKey] = lastPath
+            listener?.onUndo(lastKey)
         }
         invalidate()
     }
@@ -69,6 +75,7 @@ class DrawView @JvmOverloads constructor(
 
         val lastKey = mUndonePaths.keys.last()
         addPath(lastKey, mUndonePaths.values.last())
+        listener?.onPathDrawn(lastKey to mUndonePaths.values.last())
         mUndonePaths.remove(lastKey)
         invalidate()
     }
@@ -98,7 +105,7 @@ class DrawView @JvmOverloads constructor(
     fun getBitmap(): Bitmap {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
-        canvas.drawColor(Color.WHITE)
+        canvas.drawColor(Color.TRANSPARENT)
         mIsSaving = true
         draw(canvas)
         mIsSaving = false
@@ -124,6 +131,20 @@ class DrawView @JvmOverloads constructor(
     private fun changePaint(paintOptions: PaintOptions) {
         mPaint.color = if (paintOptions.isEraserOn) Color.WHITE else paintOptions.color
         mPaint.strokeWidth = paintOptions.strokeWidth
+    }
+
+    fun reset() {
+        mPaths.clear()
+        mLastPaths.clear()
+        mPath.reset()
+        invalidate()
+    }
+
+    fun renderPaths(paths: LinkedHashMap<MyPath, PaintOptions>) {
+        paths.keys.forEach { key ->
+            mPaths[key] = paths[key]!!
+        }
+        invalidate()
     }
 
     fun clearCanvas() {
@@ -157,6 +178,7 @@ class DrawView @JvmOverloads constructor(
         }
 
         mPaths[mPath] = mPaintOptions
+        listener?.onPathDrawn(mPath to mPaintOptions)
         mPath = MyPath()
         mPaintOptions = PaintOptions(mPaintOptions.color, mPaintOptions.strokeWidth, mPaintOptions.alpha, mPaintOptions.isEraserOn)
     }
@@ -186,4 +208,9 @@ class DrawView @JvmOverloads constructor(
         invalidate()
     }
 
+}
+
+interface DrawListener {
+    fun onPathDrawn(path: Pair<MyPath, PaintOptions>)
+    fun onUndo(path: MyPath)
 }

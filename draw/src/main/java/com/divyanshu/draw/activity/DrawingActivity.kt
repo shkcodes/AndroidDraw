@@ -13,7 +13,10 @@ import android.util.Log
 import android.view.View
 import android.widget.SeekBar
 import com.divyanshu.draw.R
+import com.divyanshu.draw.widget.DrawListener
 import com.divyanshu.draw.widget.DrawView
+import com.divyanshu.draw.widget.MyPath
+import com.divyanshu.draw.widget.PaintOptions
 import kotlinx.android.synthetic.main.activity_drawing.*
 import kotlinx.android.synthetic.main.color_palette_view.*
 import java.io.ByteArrayOutputStream
@@ -23,6 +26,26 @@ class DrawingActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_drawing)
+
+        val paths = LinkedHashMap<MyPath, PaintOptions>()
+
+        draw_view.listener = object : DrawListener {
+            override fun onPathDrawn(path: Pair<MyPath, PaintOptions>) {
+                paths[path.first] = path.second
+            }
+
+            override fun onUndo(path: MyPath) {
+                paths.remove(path)
+            }
+        }
+
+        clear_drawing.setOnClickListener { draw_view.clearCanvas() }
+        restore_drawing.setOnClickListener {
+            with(draw_view) {
+                reset()
+                draw_view.renderPaths(paths)
+            }
+        }
 
         image_close_drawing.setOnClickListener {
             finish()

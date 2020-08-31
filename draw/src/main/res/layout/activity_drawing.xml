@@ -25,6 +25,28 @@
         android:background="@color/color_white"
         android:foreground="?selectableItemBackgroundBorderless" />
 
+    <Button
+        android:id="@+id/clear_drawing"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:backgroundTint="@color/color_red"
+        android:text="Clear"
+        app:layout_constraintEnd_toStartOf="@id/restore_drawing"
+        app:layout_constraintStart_toEndOf="@id/image_close_drawing"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/restore_drawing"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:backgroundTint="@color/color_blue"
+        android:text="Restore"
+        app:layout_constraintEnd_toStartOf="@id/fab_send_drawing"
+        app:layout_constraintStart_toEndOf="@id/clear_drawing"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_send_drawing"
         android:layout_width="wrap_content"
