@@ -1,30 +1,36 @@
 package com.divyanshu.draw.widget
 
 import android.content.Context
-import android.graphics.*
-import androidx.annotation.ColorInt
-import androidx.core.graphics.ColorUtils
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
+import androidx.annotation.ColorInt
+import androidx.core.graphics.ColorUtils
+import com.divyanshu.draw.brush.Brushes
+import com.divyanshu.draw.tool.DrawingPath
 import java.util.LinkedHashMap
 
 open class DrawView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
-    private var mPaths = LinkedHashMap<MyPath, PaintOptions>()
+    companion object {
+        private const val MARKER_OPACITY = 60
+        private const val MARKER_WIDTH_FACTOR = 100F
+    }
 
-    private var mLastPaths = LinkedHashMap<MyPath, PaintOptions>()
-    private var mUndonePaths = LinkedHashMap<MyPath, PaintOptions>()
+    private var mPaths = LinkedHashMap<DrawingPath, PaintOptions>()
 
-    private var mPaint = Paint()
-    private var mPath = MyPath()
+    private var mLastPaths = LinkedHashMap<DrawingPath, PaintOptions>()
+    private var mUndonePaths = LinkedHashMap<DrawingPath, PaintOptions>()
+
+    private var brushPaint = Paint()
+    private var markerPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private var mPaintOptions = PaintOptions()
 
-    private var mCurX = 0f
-    private var mCurY = 0f
-    private var mStartX = 0f
-    private var mStartY = 0f
     private var mIsSaving = false
     private var mIsStrokeWidthBarEnabled = false
 
@@ -36,8 +42,14 @@ open class DrawView @JvmOverloads constructor(
     val isCleared: Boolean
         get() = mPaths.isEmpty()
 
+    private val drawingHandler = DrawingHandler(brushPaint, markerPaint, context)
+
+    fun setCurrentBrush(brush: Brushes) {
+        drawingHandler.currentBrush = brush
+    }
+
     init {
-        mPaint.apply {
+        brushPaint.apply {
             color = mPaintOptions.color
             style = Paint.Style.STROKE
             strokeJoin = Paint.Join.ROUND
@@ -49,7 +61,7 @@ open class DrawView @JvmOverloads constructor(
 
     fun undo() {
         if (mPaths.isEmpty() && mLastPaths.isNotEmpty()) {
-            mPaths = mLastPaths.clone() as LinkedHashMap<MyPath, PaintOptions>
+            mPaths = mLastPaths.clone() as LinkedHashMap<DrawingPath, PaintOptions>
             mLastPaths.clear()
             invalidate()
             return
@@ -74,7 +86,7 @@ open class DrawView @JvmOverloads constructor(
         }
 
         val lastKey = mUndonePaths.keys.last()
-        addPath(lastKey, mUndonePaths.values.last())
+        mPaths[lastKey] = mUndonePaths.values.last()
         listener?.onPathDrawn(lastKey to mUndonePaths.values.last())
         mUndonePaths.remove(lastKey)
         invalidate()
@@ -90,7 +102,7 @@ open class DrawView @JvmOverloads constructor(
     }
 
     fun setAlpha(newAlpha: Int) {
-        val alpha = (newAlpha*255)/100
+        val alpha = (newAlpha * 255) / 100
         mPaintOptions.alpha = alpha
         setColor(mPaintOptions.color)
     }
@@ -112,35 +124,33 @@ open class DrawView @JvmOverloads constructor(
         return bitmap
     }
 
-    fun addPath(path: MyPath, options: PaintOptions) {
-        mPaths[path] = options
-    }
-
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
         for ((key, value) in mPaths) {
             changePaint(value)
-            canvas.drawPath(key, mPaint)
+            drawingHandler.draw(canvas, key)
         }
 
         changePaint(mPaintOptions)
-        canvas.drawPath(mPath, mPaint)
+        drawingHandler.draw(canvas)
     }
 
     private fun changePaint(paintOptions: PaintOptions) {
-        mPaint.color = if (paintOptions.isEraserOn) Color.WHITE else paintOptions.color
-        mPaint.strokeWidth = paintOptions.strokeWidth
+        brushPaint.color = if (paintOptions.isEraserOn) Color.WHITE else paintOptions.color
+        brushPaint.strokeWidth = paintOptions.strokeWidth
+        markerPaint.color = ColorUtils.setAlphaComponent(paintOptions.color, MARKER_OPACITY)
+        markerPaint.strokeWidth = paintOptions.strokeWidth / MARKER_WIDTH_FACTOR
     }
 
     fun reset() {
         mPaths.clear()
         mLastPaths.clear()
-        mPath.reset()
+        drawingHandler.clear()
         invalidate()
     }
 
-    fun renderPaths(paths: LinkedHashMap<MyPath, PaintOptions>) {
+    fun renderPaths(paths: LinkedHashMap<DrawingPath, PaintOptions>) {
         paths.keys.forEach { key ->
             mPaths[key] = paths[key]!!
         }
@@ -148,57 +158,31 @@ open class DrawView @JvmOverloads constructor(
     }
 
     fun clearCanvas() {
-        mLastPaths = mPaths.clone() as LinkedHashMap<MyPath, PaintOptions>
-        mPath.reset()
+        mLastPaths = mPaths.clone() as LinkedHashMap<DrawingPath, PaintOptions>
         mPaths.clear()
+        drawingHandler.clear()
         invalidate()
-    }
-
-    private fun actionDown(x: Float, y: Float) {
-        mPath.reset()
-        mPath.moveTo(x, y)
-        mCurX = x
-        mCurY = y
-    }
-
-    private fun actionMove(x: Float, y: Float) {
-        mPath.quadTo(mCurX, mCurY, (x + mCurX) / 2, (y + mCurY) / 2)
-        mCurX = x
-        mCurY = y
-    }
-
-    private fun actionUp() {
-        mPath.lineTo(mCurX, mCurY)
-
-        // draw a dot on click
-        if (mStartX == mCurX && mStartY == mCurY) {
-            mPath.lineTo(mCurX, mCurY + 2)
-            mPath.lineTo(mCurX + 1, mCurY + 2)
-            mPath.lineTo(mCurX + 1, mCurY)
-        }
-
-        mPaths[mPath] = mPaintOptions
-        listener?.onPathDrawn(mPath to mPaintOptions)
-        mPath = MyPath()
-        mPaintOptions = PaintOptions(mPaintOptions.color, mPaintOptions.strokeWidth, mPaintOptions.alpha, mPaintOptions.isEraserOn)
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         val x = event.x
         val y = event.y
-
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
-                mStartX = x
-                mStartY = y
-                actionDown(x, y)
-                mUndonePaths.clear()
+                drawingHandler.actionDown(x, y)
             }
-            MotionEvent.ACTION_MOVE -> actionMove(x, y)
-            MotionEvent.ACTION_UP -> actionUp()
+            MotionEvent.ACTION_MOVE -> {
+                val result = drawingHandler.actionMove(x, y)
+                if (result) invalidate()
+            }
+            MotionEvent.ACTION_UP -> {
+                val result = drawingHandler.actionUp(x, y)
+                mPaths[result] = mPaintOptions
+                listener?.onPathDrawn(result to mPaintOptions)
+                mPaintOptions = PaintOptions(mPaintOptions.color, mPaintOptions.strokeWidth, mPaintOptions.alpha, mPaintOptions.isEraserOn)
+                invalidate()
+            }
         }
-
-        invalidate()
         return true
     }
 
@@ -211,6 +195,6 @@ open class DrawView @JvmOverloads constructor(
 }
 
 interface DrawListener {
-    fun onPathDrawn(path: Pair<MyPath, PaintOptions>)
-    fun onUndo(path: MyPath)
+    fun onPathDrawn(path: Pair<DrawingPath, PaintOptions>)
+    fun onUndo(path: DrawingPath)
 }

@@ -2,23 +2,44 @@ package com.divyanshu.draw.activity
 
 import android.app.Activity
 import android.content.Intent
-import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.graphics.Bitmap
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import androidx.core.content.res.ResourcesCompat
-import androidx.core.widget.ImageViewCompat
-import android.util.Log
 import android.view.View
 import android.widget.SeekBar
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.res.ResourcesCompat
 import com.divyanshu.draw.R
+import com.divyanshu.draw.brush.Brushes.MARKER
+import com.divyanshu.draw.brush.Brushes.PEN
+import com.divyanshu.draw.tool.DrawingPath
 import com.divyanshu.draw.widget.DrawListener
-import com.divyanshu.draw.widget.DrawView
-import com.divyanshu.draw.widget.MyPath
 import com.divyanshu.draw.widget.PaintOptions
-import kotlinx.android.synthetic.main.activity_drawing.*
-import kotlinx.android.synthetic.main.color_palette_view.*
+import kotlinx.android.synthetic.main.activity_drawing.brush_toggle
+import kotlinx.android.synthetic.main.activity_drawing.circle_view_opacity
+import kotlinx.android.synthetic.main.activity_drawing.circle_view_width
+import kotlinx.android.synthetic.main.activity_drawing.clear_drawing
+import kotlinx.android.synthetic.main.activity_drawing.draw_color_palette
+import kotlinx.android.synthetic.main.activity_drawing.draw_tools
+import kotlinx.android.synthetic.main.activity_drawing.draw_view
+import kotlinx.android.synthetic.main.activity_drawing.fab_send_drawing
+import kotlinx.android.synthetic.main.activity_drawing.image_close_drawing
+import kotlinx.android.synthetic.main.activity_drawing.image_draw_color
+import kotlinx.android.synthetic.main.activity_drawing.image_draw_eraser
+import kotlinx.android.synthetic.main.activity_drawing.image_draw_opacity
+import kotlinx.android.synthetic.main.activity_drawing.image_draw_redo
+import kotlinx.android.synthetic.main.activity_drawing.image_draw_undo
+import kotlinx.android.synthetic.main.activity_drawing.image_draw_width
+import kotlinx.android.synthetic.main.activity_drawing.restore_drawing
+import kotlinx.android.synthetic.main.activity_drawing.seekBar_opacity
+import kotlinx.android.synthetic.main.activity_drawing.seekBar_width
+import kotlinx.android.synthetic.main.color_palette_view.image_color_black
+import kotlinx.android.synthetic.main.color_palette_view.image_color_blue
+import kotlinx.android.synthetic.main.color_palette_view.image_color_brown
+import kotlinx.android.synthetic.main.color_palette_view.image_color_green
+import kotlinx.android.synthetic.main.color_palette_view.image_color_pink
+import kotlinx.android.synthetic.main.color_palette_view.image_color_red
+import kotlinx.android.synthetic.main.color_palette_view.image_color_yellow
 import java.io.ByteArrayOutputStream
 
 class DrawingActivity : AppCompatActivity() {
@@ -27,16 +48,19 @@ class DrawingActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_drawing)
 
-        val paths = LinkedHashMap<MyPath, PaintOptions>()
+        val paths = LinkedHashMap<DrawingPath, PaintOptions>()
 
         draw_view.listener = object : DrawListener {
-            override fun onPathDrawn(path: Pair<MyPath, PaintOptions>) {
+            override fun onPathDrawn(path: Pair<DrawingPath, PaintOptions>) {
                 paths[path.first] = path.second
             }
 
-            override fun onUndo(path: MyPath) {
+            override fun onUndo(path: DrawingPath) {
                 paths.remove(path)
             }
+        }
+        brush_toggle.setOnCheckedChangeListener { _, isChecked ->
+            draw_view.setCurrentBrush(if (isChecked) PEN else MARKER)
         }
 
         clear_drawing.setOnClickListener { draw_view.clearCanvas() }

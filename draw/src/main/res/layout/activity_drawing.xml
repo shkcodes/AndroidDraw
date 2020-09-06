@@ -47,6 +47,34 @@
         app:layout_constraintStart_toEndOf="@id/clear_drawing"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Marker"
+        android:textColor="@color/color_red"
+        app:layout_constraintBottom_toBottomOf="@id/brush_toggle"
+        app:layout_constraintEnd_toStartOf="@id/brush_toggle"
+        app:layout_constraintTop_toTopOf="@id/brush_toggle" />
+
+    <Switch
+        android:id="@+id/brush_toggle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/clear_drawing" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Paint Brush"
+        android:textColor="@color/color_blue"
+        app:layout_constraintBottom_toBottomOf="@id/brush_toggle"
+        app:layout_constraintStart_toEndOf="@id/brush_toggle"
+        app:layout_constraintTop_toTopOf="@id/brush_toggle" />
+
+
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab_send_drawing"
         android:layout_width="wrap_content"
