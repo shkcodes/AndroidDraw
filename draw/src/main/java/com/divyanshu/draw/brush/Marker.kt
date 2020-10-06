@@ -11,14 +11,13 @@ import kotlin.math.sqrt
 /**
  * Created by shashank@fueled.com on 03/09/20.
  */
-class Marker(context: Context) : Brush<List<Float>> {
+class Marker(context: Context, private val markerOpacity: Int) : Brush<List<Float>> {
 
     companion object {
         private const val FREQUENCY = 20
         private const val HEIGHT_FACTOR = 8
         private const val WIDTH_FACTOR = 2
         private const val ROTATION = 45F
-        private const val DOT_OPACITY = 150
     }
 
     private val minSize = context.resources.getDimension(R.dimen.marker_min_stroke_size)
@@ -27,6 +26,7 @@ class Marker(context: Context) : Brush<List<Float>> {
     private val rect = RectF()
 
     override fun draw(canvas: Canvas, pathData: List<Float>, paint: Paint) {
+        canvas.saveLayerAlpha(0F, 0F, canvas.width.toFloat(), canvas.height.toFloat(), markerOpacity)
         val size = paint.strokeWidth
         val sizeInPixel = (minSize + size * (maxSize - minSize))
         val step = sizeInPixel / FREQUENCY
@@ -45,9 +45,7 @@ class Marker(context: Context) : Brush<List<Float>> {
                     rect.top = lastY - halfHeight
                     rect.right = lastX + halfWidth
                     rect.bottom = lastY + halfHeight
-                    canvas.drawOval(rect, paint.apply {
-                        alpha = DOT_OPACITY
-                    })
+                    canvas.drawOval(rect, paint)
                     canvas.rotate(ROTATION, lastX, lastY)
                 }
             } else {
@@ -74,6 +72,6 @@ class Marker(context: Context) : Brush<List<Float>> {
                 lastY += i * dy
             }
         }
-
+        canvas.restore()
     }
 }

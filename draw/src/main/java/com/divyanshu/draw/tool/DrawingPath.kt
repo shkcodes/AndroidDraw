@@ -8,8 +8,6 @@ import com.divyanshu.draw.widget.MyPath
  */
 
 sealed class DrawingPath {
-    abstract val path: Any
-
-    data class PenPath(override val path: MyPath) : DrawingPath()
-    data class MarkerPath(override val path: List<Float>) : DrawingPath()
+    data class PenPath(val path: MyPath) : DrawingPath()
+    data class MarkerPath(val path: List<Float>) : DrawingPath()
 }

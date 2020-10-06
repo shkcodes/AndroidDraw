@@ -20,10 +20,11 @@ import com.divyanshu.draw.tool.PenTool
 class DrawingHandler(
     private val penPaint: Paint,
     private val markerPaint: Paint,
+    markerAlpha: Int,
     context: Context
 ) {
     private val penTool = PenTool(Pen())
-    private val markerTool = MarkerTool(Marker(context))
+    private val markerTool = MarkerTool(Marker(context, markerAlpha))
 
     private val brushToolMap = mapOf(
         PEN to penTool,

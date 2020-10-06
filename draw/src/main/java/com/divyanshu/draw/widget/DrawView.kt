@@ -18,7 +18,7 @@ open class DrawView @JvmOverloads constructor(
     context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
     companion object {
-        private const val MARKER_OPACITY = 60
+        private const val DEFAULT_MARKER_OPACITY = 150
         private const val MARKER_WIDTH_FACTOR = 100F
     }
 
@@ -42,7 +42,9 @@ open class DrawView @JvmOverloads constructor(
     val isCleared: Boolean
         get() = mPaths.isEmpty()
 
-    private val drawingHandler = DrawingHandler(brushPaint, markerPaint, context)
+    var markerOpacity: Int = DEFAULT_MARKER_OPACITY
+
+    private val drawingHandler = DrawingHandler(brushPaint, markerPaint, markerOpacity, context)
 
     fun setCurrentBrush(brush: Brushes) {
         drawingHandler.currentBrush = brush
@@ -139,7 +141,7 @@ open class DrawView @JvmOverloads constructor(
     private fun changePaint(paintOptions: PaintOptions) {
         brushPaint.color = if (paintOptions.isEraserOn) Color.WHITE else paintOptions.color
         brushPaint.strokeWidth = paintOptions.strokeWidth
-        markerPaint.color = ColorUtils.setAlphaComponent(paintOptions.color, MARKER_OPACITY)
+        markerPaint.color = paintOptions.color
         markerPaint.strokeWidth = paintOptions.strokeWidth / MARKER_WIDTH_FACTOR
     }
 
